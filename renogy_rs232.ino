@@ -1,58 +1,27 @@
-/*
-
-Reads the data from the Renogy charge controller via it's RS232 port using an ESP32 or similar. Tested with Wanderer 30A (CTRL-WND30-LI) and Wanderer 10A
-
-See my Github repo for notes on building the cable:
-https://github.com/wrybread/ESP32ArduinoRenogy
-
-Notes: 
-- I don't think can power the ESP32 from the Renogy's USB port.. Maybe it's so low power that it shuts off?
-
-
-To do:
-- find out how much of a load the load port can handle... 
-- test with an Arduino
-
-
-*/
-
-// https://github.com/syvic/ModbusMaster
 #include <ModbusMaster.h>
+#include <SoftwareSerial.h>
+
+// Adjust these pins according to your ESP8266 board's layout
+#define HC12_TX_PIN D2  // Connect to HC12 TX
+#define HC12_RX_PIN D3  // Connect to HC12 RX
+
+// ESP8266 only has one hardware serial, so we'll use it for Modbus
+#define MODBUS_RX D5
+#define MODBUS_TX D6
+
+// Create a SoftwareSerial object for the HC12
+SoftwareSerial hc12(HC12_TX_PIN, HC12_RX_PIN); 
+SoftwareSerial modbusSerial(MODBUS_RX, MODBUS_TX); // D5 (RX), D6 (TX)
 ModbusMaster node;
 
-
-
-
-/*
-A note about which pins to use: 
-- I was originally using pins 17 and 18 (aka RX2 and TX2 on some ESP32 devboards) for RX and TX, 
-which worked on an ESP32 Wroom but not an ESP32 Rover. So I switched to pins 13 and 14, which works on both.
-I haven't tested on an Arduino board though.
-*/
-#define RXD2 13
-#define TXD2 14
-
-/*
-Number of registers to check. I think all Renogy controllers have 35
-data registers (not all of which are used) and 17 info registers.
-*/
+// Number of registers to check
 const uint32_t num_data_registers = 35;
 const uint32_t num_info_registers = 17;
 
-
-// if you don't have a charge controller to test with, can set this to true to get non 0 voltage readings
 bool simulator_mode = false;
 
-
-
-
-
-
-
-
-// A struct to hold the controller data
-struct Controller_data {
-  
+// Controller data structure
+struct Controller_data { 
   uint8_t battery_soc;               // percent
   float battery_voltage;             // volts
   float battery_charging_amps;       // amps
@@ -77,8 +46,7 @@ struct Controller_data {
   uint8_t controller_uptime_days;    // days
   uint8_t total_battery_overcharges; // count
   uint8_t total_battery_fullcharges; // count
-
-  // convenience values
+    // convenience values
   float battery_temperatureF;        // fahrenheit
   float controller_temperatureF;     // fahrenheit
   float battery_charging_watts;      // watts. necessary? Does it ever differ from solar_panel_watts?
@@ -87,10 +55,8 @@ struct Controller_data {
 };
 Controller_data renogy_data;
 
-
-// A struct to hold the controller info params
+// Controller info structure
 struct Controller_info {
-  
   uint8_t voltage_rating;            // volts
   uint8_t amp_rating;                // amps
   uint8_t discharge_amp_rating;      // amps
@@ -106,62 +72,98 @@ struct Controller_info {
 };
 Controller_info renogy_info;
 
+// Function prototypes
+void renogy_read_data_registers();
+void renogy_read_info_registers();
+void renogy_control_load(bool state);
 
-
-
-
-
-void setup()
-{
-  Serial.begin(115200);
+void setup() {
+  Serial.begin(9600);
   Serial.println("Started!");
 
-  // create a second serial interface for modbus
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2); 
+  modbusSerial.begin(9600); // Modbus uses SoftwareSerial
+  node.begin(255, modbusSerial); // Modbus on SoftwareSerial
 
-  // my Renogy Wanderer has an (slave) address of 255! Not in docs??? 
-  // Do all Renogy charge controllers use this address?
-  int modbus_address = 255; 
-  node.begin(modbus_address, Serial2); 
+  // Initialize HC12 on SoftwareSerial
+  hc12.begin(9600); 
+  Serial.println("HC12 initialized");
 }
 
-
-void loop()
-{
-  static uint32_t i;
-  i++;
-  
-  // set word 0 of TX buffer to least-significant word of counter (bits 15..0)
-  node.setTransmitBuffer(0, lowWord(i));  
-  // set word 1 of TX buffer to most-significant word of counter (bits 31..16)
-  node.setTransmitBuffer(1, highWord(i));
-
+void loop() {
   renogy_read_data_registers();
   renogy_read_info_registers();
+     // Send each data field over HC12 and Serial as separate strings
+    String dataMessage;
 
-  Serial.println("Battery voltage: " + String(renogy_data.battery_voltage));
-  Serial.println("Battery charge level: " + String(renogy_data.battery_soc) + "%");
-  Serial.println("Panel wattage: " + String(renogy_data.solar_panel_watts));
-  Serial.println("controller_temperatureF=" + String(renogy_data.controller_temperatureF)); 
-  Serial.println("battery_temperatureF=" + String(renogy_data.battery_temperatureF));
-  Serial.println("---");
+    dataMessage = "home/exterior/barn/stat/solar/battperc:" + String(renogy_data.battery_soc);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
 
-
-  // turn the load on for 10 seconds
-  //renogy_control_load(1)
-  //delay(10000);
-  //renogy_control_load(0)
-  
+    dataMessage = "home/exterior/barn/stat/solar/battvolt:" + String(renogy_data.battery_voltage);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+      
+    dataMessage = "home/exterior/barn/stat/solar/chrgamps:" + String(renogy_data.battery_charging_amps);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500);
+     
+    dataMessage = "home/exterior/barn/stat/solar/loadamps:" + String(renogy_data.load_amps);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
     
-  delay(1000); 
-
+    dataMessage = "home/exterior/barn/stat/solar/pnlvolt:" + String(renogy_data.solar_panel_voltage);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+    
+    dataMessage = "home/exterior/barn/stat/solar/pnlamps:" + String(renogy_data.solar_panel_amps);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+    
+    dataMessage = "home/exterior/barn/stat/solar/minbv:" + String(renogy_data.min_battery_voltage_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+    
+    dataMessage = "home/exterior/barn/stat/solar/maxbv:" + String(renogy_data.max_battery_voltage_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+    
+    dataMessage = "home/exterior/barn/stat/solar/maxchrg:" + String(renogy_data.max_charging_amps_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+    
+    dataMessage = "home/exterior/barn/stat/solar/maxdchrg:" + String(renogy_data.max_discharging_amps_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+    
+    dataMessage = "home/exterior/barn/stat/solar/chrgah:" + String(renogy_data.charge_amphours_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+    
+    dataMessage = "home/exterior/barn/stat/solar/dchrgah:" + String(renogy_data.discharge_amphours_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+    
+    dataMessage = "home/exterior/barn/stat/solar/connect:" + String(renogy_data.controller_connected);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(500); 
+    
+  delay(10000); 
 }
 
-
-
-void renogy_read_data_registers() 
-{
-  uint8_t j, result;
+void renogy_read_data_registers() {
+ uint8_t j, result;
   uint16_t data_registers[num_data_registers];
   char buffer1[40], buffer2[40];
   uint8_t raw_data;
@@ -257,10 +259,8 @@ void renogy_read_data_registers()
 
 }
 
-
-void renogy_read_info_registers() 
-{
-  uint8_t j, result;
+void renogy_read_info_registers() {
+uint8_t j, result;
   uint16_t info_registers[num_info_registers];
   char buffer1[40], buffer2[40];
   uint8_t raw_data;
@@ -349,8 +349,6 @@ void renogy_read_info_registers()
   }
 }
 
-
-// control the load pins on Renogy charge controllers that have them
 void renogy_control_load(bool state) {
   if (state==1) node.writeSingleRegister(0x010A, 1);  // turn on load
   else node.writeSingleRegister(0x010A, 0);  // turn off load
