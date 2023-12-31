@@ -98,66 +98,107 @@ void loop() {
     dataMessage = "home/exterior/barn/stat/solar/battperc:" + String(renogy_data.battery_soc);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
+    delay(1000); 
 
     dataMessage = "home/exterior/barn/stat/solar/battvolt:" + String(renogy_data.battery_voltage);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
       
     dataMessage = "home/exterior/barn/stat/solar/chrgamps:" + String(renogy_data.battery_charging_amps);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500);
+    delay(1000);
+
+    dataMessage = "home/exterior/barn/stat/solar/chrgwatts:" + String(renogy_data.battery_charging_watts);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(1000); 
+
+    dataMessage = "home/exterior/barn/stat/solar/loadvolt:" + String(renogy_data.load_voltage);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(1000);   
      
     dataMessage = "home/exterior/barn/stat/solar/loadamps:" + String(renogy_data.load_amps);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
+
+    dataMessage = "home/exterior/barn/stat/solar/loadwatts:" + String(renogy_data.load_watts);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(1000); 
     
     dataMessage = "home/exterior/barn/stat/solar/pnlvolt:" + String(renogy_data.solar_panel_voltage);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
     
     dataMessage = "home/exterior/barn/stat/solar/pnlamps:" + String(renogy_data.solar_panel_amps);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
-    
+    delay(1000); 
+
+    dataMessage = "home/exterior/barn/stat/solar/pnlwatts:" + String(renogy_data.solar_panel_watts);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(1000); 
+
     dataMessage = "home/exterior/barn/stat/solar/minbv:" + String(renogy_data.min_battery_voltage_today);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
     
     dataMessage = "home/exterior/barn/stat/solar/maxbv:" + String(renogy_data.max_battery_voltage_today);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
     
-    dataMessage = "home/exterior/barn/stat/solar/maxchrg:" + String(renogy_data.max_charging_amps_today);
+    dataMessage = "home/exterior/barn/stat/solar/maxchrgamp:" + String(renogy_data.max_charging_amps_today);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
     
-    dataMessage = "home/exterior/barn/stat/solar/maxdchrg:" + String(renogy_data.max_discharging_amps_today);
+    dataMessage = "home/exterior/barn/stat/solar/maxdchrgamp:" + String(renogy_data.max_discharging_amps_today);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
+
+    dataMessage = "home/exterior/barn/stat/solar/maxchrgwatt:" + String(renogy_data.max_charge_watts_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(1000);
+
+    dataMessage = "home/exterior/barn/stat/solar/maxdchrgwatt:" + String(renogy_data.max_discharge_watts_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(1000);
     
     dataMessage = "home/exterior/barn/stat/solar/chrgah:" + String(renogy_data.charge_amphours_today);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
     
     dataMessage = "home/exterior/barn/stat/solar/dchrgah:" + String(renogy_data.discharge_amphours_today);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
+
+    dataMessage = "home/exterior/barn/stat/solar/chrgwatt:" + String(renogy_data.charge_watthours_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(1000); 
+
+    dataMessage = "home/exterior/barn/stat/solar/dchrgwatt:" + String(renogy_data.discharge_watthours_today);
+    hc12.println(dataMessage);
+    Serial.println(dataMessage);
+    delay(1000);
     
     dataMessage = "home/exterior/barn/stat/solar/connect:" + String(renogy_data.controller_connected);
     hc12.println(dataMessage);
     Serial.println(dataMessage);
-    delay(500); 
+    delay(1000); 
     
   delay(10000); 
 }
